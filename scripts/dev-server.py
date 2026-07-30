@@ -1,0 +1,42 @@
+"""Локальный статический сервер для превью (см. .claude/launch.json) — обычный http.server,
+но с Cache-Control: no-store на каждый ответ. Без этого браузер иногда держит старую версию
+JS/CSS после правки (даже после обычного reload) — статический сайт без сборки особенно к этому
+чувствителен, т.к. нет хешей в именах файлов, которые обычно инвалидируют кэш сами по себе."""
+import os
+import socketserver
+import sys
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+
+
+class NoCacheHandler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        super().end_headers()
+
+
+class FastServer(ThreadingHTTPServer):
+    """HTTPServer.server_bind() вызывает socket.getfqdn() — обратный DNS-резолв имени хоста,
+    который на Windows нередко висит 5-15 сек. Резолв выполняется ДО listen(), поэтому сервер
+    всё это время не в LISTENING, и браузер при запуске ловит "страница не найдена". server_name
+    нам не нужен (это dev-сервер), поэтому обходим getfqdn — старт становится мгновенным."""
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        host, port = self.server_address[:2]
+        self.server_name = host or 'localhost'
+        self.server_port = port
+
+
+if __name__ == '__main__':
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8723
+    # Раздаём корень программы (папку над scripts/) независимо от того, откуда запустили:
+    # после систематизации папок (21.07) программа живёт в Config/config, а превью может
+    # стартовать из Config. Необязательный 2-й аргумент — раздать другую папку.
+    os.chdir(sys.argv[2] if len(sys.argv) > 2
+             else os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    # ThreadingHTTPServer — не plain HTTPServer: страница на загрузке шлёт ~30 параллельных
+    # запросов ES-модулей, однопоточный сервер обслуживает их по очереди и под такой нагрузкой
+    # браузер может оборвать соединение по таймауту (страница падает в chrome-error). Тот же
+    # выбор, что и у `python -m http.server` (использует ThreadingHTTPServer с Python 3.7+).
+    FastServer(('', port), NoCacheHandler).serve_forever()
