@@ -5,12 +5,27 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let renderer, scene, camera, controls;
 let enclosureGroup;          // всё, что рисует границы застройки — сносится и строится заново
+let partsGroup;              // детали — тоже перестраиваются целиком
 let container;
 
 /** Полупрозрачные границы: пол, потолок, боковые и задняя стена. Без текстур (см. ТЗ, раздел 8). */
 const WALL_COLOR = 0xb9c0c8;
 const WALL_OPACITY = 0.3;
 const EDGE_COLOR = 0x51606e;
+
+/** Цвет ЛДСП «по умолчанию». Материалы придут из каталога — тогда это уйдёт (ТЗ 6). */
+const PART_COLOR = 0xd8c9a8;
+const PART_EDGE_COLOR = 0x8a7a58;
+
+/** Снести группу вместе с геометрией и материалами: перестраиваем часто, мусор копить нельзя. */
+function disposeGroup(group) {
+  if (!group) return;
+  scene.remove(group);
+  group.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) o.material.dispose();
+  });
+}
 
 export function initScene(el) {
   container = el;
@@ -46,14 +61,7 @@ export function initScene(el) {
 export function drawEnclosure(enclosure) {
   const { width, height, depth } = enclosure;
 
-  if (enclosureGroup) {
-    scene.remove(enclosureGroup);
-    enclosureGroup.traverse(o => {
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) o.material.dispose();
-    });
-  }
-
+  disposeGroup(enclosureGroup);
   enclosureGroup = new THREE.Group();
 
   // Коробка рисуется изнутри (BackSide): передняя стенка не мешает смотреть,
@@ -80,6 +88,38 @@ export function drawEnclosure(enclosure) {
   enclosureGroup.position.set(width / 2, height / 2, depth / 2);
 
   scene.add(enclosureGroup);
+}
+
+/**
+ * Нарисовать детали по разложенной цепочке. Координаты приходят готовыми из модели —
+ * сцена ничего не вычисляет сама, иначе расчёт расползётся по двум местам.
+ *
+ * В этом срезе стойки — во всю высоту и глубину застройки. Полки и привязка по высоте
+ * появятся следующим блоком.
+ */
+export function drawParts(items, enclosure) {
+  disposeGroup(partsGroup);
+  partsGroup = new THREE.Group();
+
+  const { height, depth } = enclosure;
+
+  for (const item of items) {
+    if (item.type !== 'part') continue;
+
+    const geometry = new THREE.BoxGeometry(item.size, height, depth);
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color: PART_COLOR }));
+    mesh.add(new THREE.LineSegments(
+      new THREE.EdgesGeometry(geometry),
+      new THREE.LineBasicMaterial({ color: PART_EDGE_COLOR })
+    ));
+
+    // Модель даёт левую грань детали, BoxGeometry строится от центра.
+    mesh.position.set(item.x + item.size / 2, height / 2, depth / 2);
+    mesh.userData.partId = item.id;      // пригодится для выделения мышью
+    partsGroup.add(mesh);
+  }
+
+  scene.add(partsGroup);
 }
 
 /** Поставить камеру так, чтобы застройка целиком попала в кадр. */
