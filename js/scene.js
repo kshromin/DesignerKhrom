@@ -21,7 +21,6 @@ export function initScene(el) {
   camera = new THREE.PerspectiveCamera(45, 1, 10, 50000);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
   container.appendChild(renderer.domElement);
 
   controls = new OrbitControls(camera, renderer.domElement);
@@ -32,8 +31,14 @@ export function initScene(el) {
   sun.position.set(1, 2, 3);
   scene.add(sun);
 
-  window.addEventListener('resize', resize);
+  // Размер берём сразу — если контейнер уже разложен, ждать нечего.
   resize();
+
+  // Дальше слушаем сам контейнер, а не окно: он меняется не только вместе с окном
+  // (панель, будущий сплиттер), и на старте может быть ещё нулевым. Синхронный вызов
+  // выше нужен потому, что ResizeObserver в скрытой вкладке не срабатывает вовсе.
+  new ResizeObserver(resize).observe(container);
+
   animate();
 }
 
@@ -94,6 +99,9 @@ function resize() {
   if (!w || !h) return;
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  // Плотность пикселей задаём здесь, а не при создании: она меняется при переносе окна
+  // на монитор с другим масштабом, и тогда приходит как раз изменение размера.
+  renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(w, h);
 }
 
