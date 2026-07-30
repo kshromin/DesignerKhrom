@@ -1,0 +1,75 @@
+/* Оформление намеренно скупое: интерфейс для мебельщика, а не витрина. */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font: 14px/1.45 system-ui, "Segoe UI", sans-serif;
+  color: #1e2833;
+}
+
+body {
+  display: flex;
+  overflow: hidden;
+}
+
+#viewport {
+  flex: 1;
+  min-width: 0;
+}
+
+#viewport canvas { display: block; }
+
+#panel {
+  width: 260px;
+  flex: none;
+  padding: 18px 16px;
+  border-left: 1px solid #d6dbe0;
+  background: #fafbfc;
+  overflow-y: auto;
+}
+
+#panel h1 {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hint, .note {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: #6b7885;
+}
+
+.note {
+  margin: 20px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #e4e8ec;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.field label { color: #46535f; }
+
+.field input {
+  width: 92px;
+  padding: 5px 8px;
+  border: 1px solid #c3cad1;
+  border-radius: 4px;
+  font: inherit;
+  text-align: right;
+  background: #fff;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: #5b8cc4;
+  box-shadow: 0 0 0 2px rgba(91, 140, 196, 0.2);
+}
