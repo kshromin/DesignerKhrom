@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Тесты модели — DesignerKhrom</title>
+<style>
+  body { margin: 0; padding: 24px; font: 14px/1.5 system-ui, "Segoe UI", sans-serif; color: #1e2833; }
+  h1 { margin: 0 0 4px; font-size: 18px; }
+  .hint { margin: 0 0 18px; color: #6b7885; font-size: 13px; }
+
+  #total { padding: 10px 14px; border-radius: 6px; font-weight: 600; margin-bottom: 18px; }
+  #total.pass { background: #e6f4ea; color: #1c6b33; }
+  #total.fail { background: #fdeaea; color: #a01d1d; }
+
+  h2 { margin: 20px 0 6px; font-size: 14px; color: #46535f; }
+  .case { padding: 3px 0 3px 22px; position: relative; }
+  .case::before { position: absolute; left: 2px; }
+  .case.ok::before   { content: "✓"; color: #2a9d51; }
+  .case.bad::before  { content: "✗"; color: #cc2b2b; }
+  .case.bad { color: #a01d1d; }
+  .why { margin: 2px 0 6px 22px; padding: 6px 9px; background: #fdeaea; border-radius: 4px;
+         font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<h1>Тесты модели</h1>
+<p class="hint">Проверяют расчёт просветов без всякой картинки: арифметику, блокировки и края.
+Открывается прямо в браузере — <code>tests.bat</code> или <code>localhost:8730/tests/</code>.</p>
+
+<div id="total">Считаю…</div>
+<div id="out"></div>
+
+<script type="module" src="model.test.js"></script>
+</body>
+</html>
