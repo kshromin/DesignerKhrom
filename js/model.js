@@ -41,10 +41,10 @@ export const LIMITS = {
  * axis — вдоль какой оси деталь делит область: 'x' режет по ширине, 'y' — по высоте.
  */
 export const PART_KINDS = {
-  stand16: { axis: 'x', thickness: 16, label: 'Стойка 16' },
-  stand32: { axis: 'x', thickness: 32, label: 'Стойка 32' },
-  shelf16: { axis: 'y', thickness: 16, label: 'Полка 16' },
-  shelf32: { axis: 'y', thickness: 32, label: 'Полка 32' },
+  stand16: { axis: 'x', thickness: 16, label: 'Стойка 16', section: 'Внутренняя часть' },
+  stand32: { axis: 'x', thickness: 32, label: 'Стойка 32', section: 'Внутренняя часть' },
+  shelf16: { axis: 'y', thickness: 16, label: 'Полка 16', section: 'Внутренняя часть' },
+  shelf32: { axis: 'y', thickness: 32, label: 'Полка 32', section: 'Внутренняя часть' },
 };
 
 let nextId = 1;

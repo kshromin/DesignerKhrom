@@ -2,19 +2,17 @@
 
 import {
   state, onChange, computeLayout, computeEstimate, setEnclosureSize, resetProject,
-  PART_KINDS, addPart, removePart, setProjectMaterial, setPartMaterial,
+  PART_KINDS, removePart, setProjectMaterial, setPartMaterial,
   setRegionSize, setRegionLocked, pressRegion,
 } from './model.js';
 import { groups, edge, material } from './materials.js';
+import * as placement from './placement.js';
 
 const FIELDS = {
   width:  'encWidth',
   height: 'encHeight',
   depth:  'encDepth',
 };
-
-/** Выбранный в палитре вид детали. По ТЗ 4.1 сначала выбирают вид, потом место. */
-let activeKind = 'stand16';
 
 /** Последнее сообщение об отказе — например, попытка удалить деталь с зависимыми. */
 let notice = '';
@@ -32,6 +30,7 @@ export function bindPanel() {
   // Панель перерисовывается по уведомлению модели, а не сразу после нажатия:
   // так один источник правды и никакой рассинхронизации со сценой.
   onChange(render);
+  placement.onChange(renderPaletteState);
 }
 
 function bindEnclosureFields() {
@@ -81,22 +80,48 @@ function bindProjectMaterial() {
   holder.replaceWith(sel);
 }
 
+/** Палитра разбита на разделы по этапам работы, как в КД (ТЗ 8). */
 function buildPalette() {
   const box = document.getElementById('palette');
+  const sections = new Map();
 
   for (const [kind, spec] of Object.entries(PART_KINDS)) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'kind';
-    btn.dataset.kind = kind;
-    btn.textContent = spec.label;
-    btn.addEventListener('click', () => {
-      activeKind = kind;
-      box.querySelectorAll('.kind').forEach(b => b.classList.toggle('on', b.dataset.kind === kind));
-    });
-    box.appendChild(btn);
+    if (!sections.has(spec.section)) sections.set(spec.section, []);
+    sections.get(spec.section).push([kind, spec]);
   }
-  box.querySelector(`[data-kind="${activeKind}"]`).classList.add('on');
+
+  for (const [name, kinds] of sections) {
+    const title = document.createElement('div');
+    title.className = 'section';
+    title.textContent = name;
+    box.appendChild(title);
+
+    const row = document.createElement('div');
+    row.className = 'kinds';
+    for (const [kind, spec] of kinds) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'kind';
+      btn.dataset.kind = kind;
+      btn.textContent = spec.label;
+      btn.addEventListener('click', () => placement.setKind(kind));
+      row.appendChild(btn);
+    }
+    box.appendChild(row);
+  }
+
+  renderPaletteState();
+}
+
+/** Подсветка выбранного вида и подсказка о том, какой сейчас шаг установки. */
+function renderPaletteState() {
+  const kind = placement.activeKind();
+  document.querySelectorAll('#palette .kind')
+    .forEach(b => b.classList.toggle('on', b.dataset.kind === kind));
+
+  document.getElementById('placeHint').textContent = placement.chosenId()
+    ? 'Место выбрано. Кликни ещё раз, чтобы поставить.'
+    : `Кликни по оранжевой зоне в сцене — выбрать место для «${PART_KINDS[kind].label}».`;
 }
 
 /**
@@ -117,6 +142,7 @@ function render() {
   note.textContent = notice;
   note.hidden = !notice;
 
+  renderPaletteState();
   renderPrice();
 }
 
@@ -167,15 +193,6 @@ function regionRow(region) {
     row.appendChild(button('⟵', 'Прижать: просвет в ноль', () => { notice = ''; pressRegion(region.id); }));
     row.appendChild(button(region.locked ? '🔒' : '🔓', 'Блокировка: запертый просвет не меняется',
       () => { notice = ''; setRegionLocked(region.id, !region.locked); }));
-  }
-
-  // Ставить можно только в пустую область: в поделённую деталь идёт через её просветы.
-  if (!region.divided) {
-    row.appendChild(button('+', 'Поставить сюда выбранную деталь', () => {
-      notice = '';
-      if (!addPart(region.id, activeKind)) notice = 'Деталь не влезает в этот просвет.';
-      else render();
-    }));
   }
 
   return row;

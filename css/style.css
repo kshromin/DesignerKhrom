@@ -17,6 +17,8 @@ body {
 #viewport {
   flex: 1;
   min-width: 0;
+  /* Курсор-палец над сценой: там кликают по зонам, а не просто смотрят. */
+  cursor: pointer;
 }
 
 #viewport canvas { display: block; }
@@ -118,7 +120,17 @@ body {
 
 /* ── Палитра и цепочка ─────────────────────────────────────────────── */
 
-#palette {
+#palette .section {
+  margin: 8px 0 5px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8a949e;
+}
+
+#palette .section:first-child { margin-top: 0; }
+
+#palette .kinds {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
