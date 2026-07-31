@@ -132,14 +132,22 @@ body {
 }
 
 /* Заблокированный просвет виден сразу: он не поедет ни при чём. */
-.row.gap.locked input {
+.row.region.locked input {
   background: #f1f2f4;
   color: #8a949e;
 }
 
-/* Деталь — плотная строка со сдвигом, чтобы цепочка читалась как чередование. */
+/* Поделённая область — не просвет, а контейнер: приглушаем, чтобы не спорила за внимание. */
+.row.region.divided > input { opacity: 0.55; }
+
+.row .dims {
+  font-size: 11px;
+  color: #8a949e;
+  white-space: nowrap;
+}
+
+/* Деталь — плотная строка, чтобы дерево читалось как чередование. */
 .row.part {
-  margin: 0 0 4px 12px;
   padding: 3px 0;
   color: #46535f;
 }
@@ -148,3 +156,25 @@ body {
   flex: 1;
   font-size: 12px;
 }
+
+.notice {
+  margin: 0 0 8px;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: #fdf1e3;
+  color: #8a5a1d;
+  font-size: 12px;
+}
+
+.wide {
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px;
+  border: 1px solid #c3cad1;
+  border-radius: 4px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.wide:hover { background: #f0f3f6; }

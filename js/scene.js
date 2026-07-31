@@ -91,30 +91,30 @@ export function drawEnclosure(enclosure) {
 }
 
 /**
- * Нарисовать детали по разложенной цепочке. Координаты приходят готовыми из модели —
- * сцена ничего не вычисляет сама, иначе расчёт расползётся по двум местам.
+ * Нарисовать детали по разложенному дереву. Координаты и размеры приходят готовыми
+ * из модели — сцена ничего не вычисляет сама, иначе расчёт расползётся по двум местам.
  *
- * В этом срезе стойки — во всю высоту и глубину застройки. Полки и привязка по высоте
- * появятся следующим блоком.
+ * Глубина пока общая на всё изделие: по ТЗ 3.2 у внешних деталей она на 90 мм больше,
+ * но внешние детали появятся вместе с дверями.
  */
 export function drawParts(items, enclosure) {
   disposeGroup(partsGroup);
   partsGroup = new THREE.Group();
 
-  const { height, depth } = enclosure;
+  const { depth } = enclosure;
 
   for (const item of items) {
     if (item.type !== 'part') continue;
 
-    const geometry = new THREE.BoxGeometry(item.size, height, depth);
+    const geometry = new THREE.BoxGeometry(item.w, item.h, depth);
     const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color: PART_COLOR }));
     mesh.add(new THREE.LineSegments(
       new THREE.EdgesGeometry(geometry),
       new THREE.LineBasicMaterial({ color: PART_EDGE_COLOR })
     ));
 
-    // Модель даёт левую грань детали, BoxGeometry строится от центра.
-    mesh.position.set(item.x + item.size / 2, height / 2, depth / 2);
+    // Модель даёт левый нижний угол детали, BoxGeometry строится от центра.
+    mesh.position.set(item.x + item.w / 2, item.y + item.h / 2, depth / 2);
     mesh.userData.partId = item.id;      // пригодится для выделения мышью
     partsGroup.add(mesh);
   }
