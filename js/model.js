@@ -61,6 +61,9 @@ export const state = {
 
   /** Корень дерева. Его размеры — размеры застройки, поэтому size у него не используется. */
   root: emptyRegion(),
+
+  /** Материал проекта. У детали может быть свой — тогда он перебивает этот (ТЗ 3.2). */
+  material: null,
 };
 
 const listeners = [];
@@ -158,6 +161,9 @@ export function computeLayout() {
         const t = thicknessOf(item);
         out.push({
           type: 'part', id: item.id, kind: item.kind, level: level + 1,
+          // material — действующий (с учётом наследования), ownMaterial — назначенный детали.
+          material: materialOf(item),
+          ownMaterial: item.material || null,
           ...(node.axis === 'x'
             ? { x: along, y, w: t, h }
             : { x, y: along, w, h: t }),
@@ -430,4 +436,71 @@ export function resetProject(width = 3000, height = 2500, depth = 600) {
   state.enclosure = { width, height, depth };
   state.root = emptyRegion();
   emit();
+}
+
+// ── Материалы и смета ───────────────────────────────────────────────────────
+
+/** Материал детали: свой, если назначен, иначе материал проекта (ТЗ 3.2). */
+export const materialOf = part => part.material || state.material;
+
+export function setProjectMaterial(id) {
+  if (state.material === id) return;
+  state.material = id;
+  emit();
+}
+
+/** Назначить детали свой материал. null — вернуть к материалу проекта. */
+export function setPartMaterial(partId, id) {
+  const hit = findPart(partId);
+  if (!hit) return;
+  hit.chain.items[hit.index].material = id;
+  emit();
+}
+
+/**
+ * Смета (ТЗ 7): площадь ЛДСП × цена материала + кромка по погонным метрам.
+ * Фурнитура добавится вместе с узлами — ящиками, дверями, штангами.
+ *
+ * Деталь — это лист: её площадь считается как длина × глубина застройки. Толщина в площадь
+ * не входит, это ребро. Кромка пока идёт только на переднюю грань — ту, что смотрит в комнату;
+ * задать кромку по каждой стороне (ТЗ 3.2) — следующий шаг.
+ *
+ * priceOf — функция «id материала → запись каталога». Передаётся снаружи, чтобы модель
+ * не зависела от того, откуда взялся каталог, и оставалась проверяемой отдельно.
+ */
+export function computeEstimate(priceOf, edgePrice) {
+  const { depth } = state.enclosure;
+  const rows = [];
+  let areaM2 = 0, edgeM = 0, panels = 0;
+
+  for (const item of computeLayout()) {
+    if (item.type !== 'part') continue;
+
+    const spec = PART_KINDS[item.kind];
+    const length = spec.axis === 'x' ? item.h : item.w;   // длина детали вдоль неё самой
+    const area = (length * depth) / 1e6;                  // мм² → м²
+    const edge = length / 1000;                           // мм → пог. м
+
+    const mat = priceOf(item.material);
+    const cost = Math.round(area * (mat ? mat.price : 0) + edge * edgePrice);
+
+    rows.push({
+      id: item.id, kind: item.kind, label: PART_KINDS[item.kind].label,
+      length, area: +area.toFixed(3), edge: +edge.toFixed(3),
+      material: mat ? mat.name : '— не задан —', cost,
+    });
+
+    areaM2 += area;
+    edgeM += edge;
+    panels += area * (mat ? mat.price : 0);
+  }
+
+  return {
+    rows,
+    areaM2: +areaM2.toFixed(3),
+    edgeM: +edgeM.toFixed(3),
+    panels: Math.round(panels),
+    edges: Math.round(edgeM * edgePrice),
+    total: Math.round(panels + edgeM * edgePrice),
+  };
 }

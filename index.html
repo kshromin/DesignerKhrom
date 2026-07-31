@@ -19,6 +19,11 @@
 <div id="viewport"></div>
 
 <aside id="panel">
+  <div id="price">
+    <span class="sum">—</span>
+    <span class="breakdown"></span>
+  </div>
+
   <h1>Застройка</h1>
   <p class="hint">Объём, в котором строим. Миллиметры.</p>
 
@@ -34,6 +39,10 @@
     <label for="encDepth">Глубина</label>
     <input type="number" id="encDepth" step="10">
   </div>
+
+  <h2>Материал проекта</h2>
+  <p class="hint">Действует на все детали, у которых не задан свой.</p>
+  <select id="projectMaterial"></select>
 
   <h2>Палитра</h2>
   <p class="hint">Выбери вид детали, затем «+» в нужном просвете.</p>

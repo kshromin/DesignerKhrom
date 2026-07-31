@@ -6,3 +6,4 @@ _work/
 
 # Служебный кэш Python-скриптов
 scripts/__pycache__/
+data/*.local.json

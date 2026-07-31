@@ -97,7 +97,7 @@ export function drawEnclosure(enclosure) {
  * Глубина пока общая на всё изделие: по ТЗ 3.2 у внешних деталей она на 90 мм больше,
  * но внешние детали появятся вместе с дверями.
  */
-export function drawParts(items, enclosure) {
+export function drawParts(items, enclosure, lookupMaterial) {
   disposeGroup(partsGroup);
   partsGroup = new THREE.Group();
 
@@ -106,12 +106,22 @@ export function drawParts(items, enclosure) {
   for (const item of items) {
     if (item.type !== 'part') continue;
 
+    // Цвет берём из каталога; нет материала или цвета — красим нейтральной ЛДСП.
+    const mat = lookupMaterial ? lookupMaterial(item.material) : null;
+    const color = mat && mat.rgb ? new THREE.Color(mat.rgb) : new THREE.Color(PART_COLOR);
+
     const geometry = new THREE.BoxGeometry(item.w, item.h, depth);
-    const mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color: PART_COLOR }));
+    const surface = new THREE.MeshLambertMaterial({ color });
+    if (mat && mat.transparent) {
+      surface.transparent = true;
+      surface.opacity = 0.45;
+    }
+    const mesh = new THREE.Mesh(geometry, surface);
     mesh.add(new THREE.LineSegments(
       new THREE.EdgesGeometry(geometry),
       new THREE.LineBasicMaterial({ color: PART_EDGE_COLOR })
     ));
+
 
     // Модель даёт левый нижний угол детали, BoxGeometry строится от центра.
     mesh.position.set(item.x + item.w / 2, item.y + item.h / 2, depth / 2);

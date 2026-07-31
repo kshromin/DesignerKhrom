@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "note": "Стартовый каталог. Структура двухуровневая: группа → цвет (ТЗ, раздел 6). Названия декоров настоящие, ЦЕНЫ — ЗАГЛУШКИ, подставь свои. Полный каталог дилера кладётся рядом файлом materials.local.json, он в .gitignore и грузится вместо этого, если есть.",
+  "edge": {
+    "name": "Кромка ПВХ 2 мм",
+    "unit": "пог. м",
+    "price": 60
+  },
+  "groups": [
+    {
+      "name": "ЛДСП ЭГГЕР",
+      "unit": "м²",
+      "items": [
+        { "id": "egger-u104", "name": "Алебастр белый U104 ST9", "rgb": "#FEF9E3", "price": 1250 },
+        { "id": "egger-w1000", "name": "Белый премиум W1000 ST9", "rgb": "#F4F2ED", "price": 1180 },
+        { "id": "egger-h1277", "name": "Акация Лэйклэнд светлая H1277 ST9", "rgb": "#D9C2A9", "price": 1490 },
+        { "id": "egger-h1242", "name": "Акация Шеффилд натуральный H1242 ST10", "rgb": "#C29D78", "price": 1490 },
+        { "id": "egger-f685", "name": "Акапулько F685 ST10", "rgb": "#B19777", "price": 1620 },
+        { "id": "egger-u504", "name": "Альпийское озеро U504 ST9", "rgb": "#384B64", "price": 1380 },
+        { "id": "egger-f509", "name": "Алюминий F509 ST2", "rgb": "#ABA59C", "price": 1720 },
+        { "id": "egger-u999", "name": "Чёрный графит U999 ST2", "rgb": "#2B2B2D", "price": 1340 }
+      ]
+    },
+    {
+      "name": "Стекло",
+      "unit": "м²",
+      "items": [
+        { "id": "glass-clear", "name": "Бесцветное просветлённое", "rgb": "#DFEFFF", "price": 2600, "transparent": true },
+        { "id": "glass-matt-white", "name": "Матовое белое", "rgb": "#CACACA", "price": 2900 },
+        { "id": "glass-matt-brown", "name": "Матовое евробраун", "rgb": "#A6988F", "price": 2900 }
+      ]
+    },
+    {
+      "name": "Зеркало",
+      "unit": "м²",
+      "items": [
+        { "id": "mirror-silver", "name": "Серебряный", "rgb": "#CFD7DE", "price": 3100 },
+        { "id": "mirror-bronze", "name": "Бронза", "rgb": "#926850", "price": 3400 },
+        { "id": "mirror-grey", "name": "Серое", "rgb": "#7C8183", "price": 3400 }
+      ]
+    }
+  ]
+}

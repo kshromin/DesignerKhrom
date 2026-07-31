@@ -7,6 +7,7 @@
 import {
   state, computeLayout, allParts, resetProject, setEnclosureSize, LIMITS,
   PART_KINDS, addPart, removePart, setRegionSize, setRegionLocked, pressRegion,
+  computeEstimate, setProjectMaterial, setPartMaterial,
 } from '../js/model.js';
 
 // ── Мелкий каркас ───────────────────────────────────────────────────────────
@@ -322,6 +323,93 @@ test('шкаф: две стойки, полки в отсеках, смена г
     ok(p.x >= 0 && p.x + p.w <= 3600, `деталь ${p.id} вылезла по ширине`);
     ok(p.y >= 0 && p.y + p.h <= 2000, `деталь ${p.id} вылезла по высоте`);
   }
+});
+
+// ── Цена ────────────────────────────────────────────────────────────────────
+
+group('Цена (ТЗ 7)');
+
+// Каталог-пустышка: цены круглые, чтобы арифметика проверялась в уме, а не подгонкой.
+const PRICES = { plita: { name: 'Плита', price: 1000 }, steklo: { name: 'Стекло', price: 3000 } };
+const priceOf = id => PRICES[id] || null;
+const EDGE = 100;                            // ₽ за погонный метр
+
+test('площадь считается как длина × глубина, а не по толщине', () => {
+  empty(2000, 2000);
+  resetProject(2000, 2000, 500);
+  setProjectMaterial('plita');
+  addPart(rootRegion().id, 'shelf16');       // полка 2000 мм в застройке глубиной 500
+
+  const est = computeEstimate(priceOf, EDGE);
+  eq(est.rows.length, 1, 'одна деталь');
+  eq(est.areaM2, 1, '2000 мм × 500 мм = 1 м²');
+  eq(est.edgeM, 2, 'кромка по передней грани — 2 погонных метра');
+});
+
+test('итог складывается из плиты и кромки', () => {
+  resetProject(2000, 2000, 500);
+  setProjectMaterial('plita');
+  addPart(rootRegion().id, 'shelf16');
+
+  const est = computeEstimate(priceOf, EDGE);
+  eq(est.panels, 1000, '1 м² по 1000 ₽');
+  eq(est.edges, 200, '2 пог. м по 100 ₽');
+  eq(est.total, 1200, 'итого');
+});
+
+test('у стойки длина — это высота', () => {
+  resetProject(2000, 2000, 500);
+  setProjectMaterial('plita');
+  addPart(rootRegion().id, 'stand16');       // стойка высотой 2000 в глубине 500
+
+  const est = computeEstimate(priceOf, EDGE);
+  eq(est.areaM2, 1, '2000 мм высоты × 500 мм глубины');
+});
+
+test('материал детали перебивает материал проекта', () => {
+  resetProject(2000, 2000, 500);
+  setProjectMaterial('plita');
+  const shelf = addPart(rootRegion().id, 'shelf16');
+
+  const before = computeEstimate(priceOf, EDGE).total;
+  setPartMaterial(shelf.id, 'steklo');
+  const after = computeEstimate(priceOf, EDGE);
+
+  eq(after.rows[0].material, 'Стекло', 'в смете виден свой материал детали');
+  eq(after.total, 3200, '1 м² стекла по 3000 плюс кромка 200');
+  ok(after.total > before, 'дороже, чем на плите');
+
+  setPartMaterial(shelf.id, null);
+  eq(computeEstimate(priceOf, EDGE).total, before, 'снятие своего материала возвращает проектный');
+});
+
+test('цена пересчитывается при смене габарита', () => {
+  resetProject(2000, 2000, 500);
+  setProjectMaterial('plita');
+  addPart(rootRegion().id, 'shelf16');
+
+  const before = computeEstimate(priceOf, EDGE).total;
+  setEnclosureSize('width', 4000);           // полка стала вдвое длиннее
+  const after = computeEstimate(priceOf, EDGE);
+
+  eq(after.areaM2, 2, 'площадь удвоилась');
+  eq(after.total, before * 2, 'и цена тоже');
+});
+
+test('пустая застройка стоит ноль, а не ломается', () => {
+  resetProject(2000, 2000, 500);
+  const est = computeEstimate(priceOf, EDGE);
+  eq([est.total, est.rows.length], [0, 0], 'ни деталей, ни цены');
+});
+
+test('деталь без материала не роняет смету', () => {
+  resetProject(2000, 2000, 500);
+  setProjectMaterial(null);
+  addPart(rootRegion().id, 'shelf16');
+  const est = computeEstimate(priceOf, EDGE);
+  eq(est.panels, 0, 'плита не посчитана');
+  eq(est.edges, 200, 'а кромка всё равно есть');
+  ok(est.rows[0].material.includes('не задан'), 'и это видно в смете');
 });
 
 // ── Вывод ───────────────────────────────────────────────────────────────────

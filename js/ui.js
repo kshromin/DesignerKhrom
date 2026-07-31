@@ -1,10 +1,11 @@
 // Панель управления. Связывает поля ввода с моделью — и ничего не знает о 3D.
 
 import {
-  state, onChange, computeLayout, setEnclosureSize, resetProject,
-  PART_KINDS, addPart, removePart,
+  state, onChange, computeLayout, computeEstimate, setEnclosureSize, resetProject,
+  PART_KINDS, addPart, removePart, setProjectMaterial, setPartMaterial,
   setRegionSize, setRegionLocked, pressRegion,
 } from './model.js';
+import { groups, edge, material } from './materials.js';
 
 const FIELDS = {
   width:  'encWidth',
@@ -20,6 +21,7 @@ let notice = '';
 
 export function bindPanel() {
   bindEnclosureFields();
+  bindProjectMaterial();
   buildPalette();
   document.getElementById('reset').addEventListener('click', () => {
     notice = '';
@@ -42,6 +44,41 @@ function bindEnclosureFields() {
     el.addEventListener('change', apply);
     el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
   }
+}
+
+/** Выпадающий список материалов, разбитый на группы каталога. */
+function materialSelect(selected, { withInherit = false } = {}) {
+  const sel = document.createElement('select');
+
+  if (withInherit) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'как у проекта';
+    sel.appendChild(opt);
+  }
+
+  for (const group of groups()) {
+    const box = document.createElement('optgroup');
+    box.label = group.name;
+    for (const item of group.items) {
+      const opt = document.createElement('option');
+      opt.value = item.id;
+      opt.textContent = `${item.name} · ${item.price} ₽/${group.unit}`;
+      box.appendChild(opt);
+    }
+    sel.appendChild(box);
+  }
+
+  sel.value = selected || '';
+  return sel;
+}
+
+function bindProjectMaterial() {
+  const holder = document.getElementById('projectMaterial');
+  const sel = materialSelect(state.material);
+  sel.id = 'projectMaterial';
+  sel.addEventListener('change', () => setProjectMaterial(sel.value));
+  holder.replaceWith(sel);
 }
 
 function buildPalette() {
@@ -79,6 +116,20 @@ function render() {
   const note = document.getElementById('notice');
   note.textContent = notice;
   note.hidden = !notice;
+
+  renderPrice();
+}
+
+/** Цена видна постоянно и пересчитывается на каждое действие (ТЗ 7). */
+function renderPrice() {
+  const est = computeEstimate(material, edge().price);
+  const box = document.getElementById('price');
+
+  box.querySelector('.sum').textContent = `${est.total.toLocaleString('ru-RU')} ₽`;
+  box.querySelector('.breakdown').textContent = est.rows.length
+    ? `${est.areaM2.toFixed(2)} м² · ${est.panels.toLocaleString('ru-RU')} ₽ ` +
+      `+ кромка ${est.edgeM.toFixed(1)} пог. м · ${est.edges.toLocaleString('ru-RU')} ₽`
+    : 'деталей пока нет';
 }
 
 /** Габарит мог поправиться сам (зажатие в пределы) — поля обязаны показывать правду. */
@@ -139,6 +190,13 @@ function partRow(part) {
   const along = PART_KINDS[part.kind].axis === 'x' ? `на ${part.x} мм` : `на высоте ${part.y} мм`;
   label.textContent = `${PART_KINDS[part.kind].label} · ${along}`;
   row.appendChild(label);
+
+  // Свой материал детали (ТЗ 3.2). Пусто — значит наследует проектный.
+  const sel = materialSelect(part.ownMaterial || '', { withInherit: true });
+  sel.className = 'mat';
+  sel.title = 'Материал этой детали';
+  sel.addEventListener('change', () => setPartMaterial(part.id, sel.value || null));
+  row.appendChild(sel);
 
   row.appendChild(button('×', 'Удалить деталь', () => {
     const res = removePart(part.id);
